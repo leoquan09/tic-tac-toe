@@ -28,6 +28,9 @@ const newBoard = (function() {
             }
         },
         checkWin,
+        resetBoard: () => {
+            board = [["", "", ""], ["", "", ""], ["", "", ""]];
+        },
     }
 })();
 
@@ -46,6 +49,7 @@ const playerTwo = player(prompt("Player two name: "), "O", 0);
 const gameController = (function() {
     const players = [playerOne, playerTwo];
     let currentPlayer = players[0];
+    let gameOver = false;
 
     let playerSwitch = () => {
         currentPlayer = currentPlayer === players[0] ?  players[1] : players[0];
@@ -54,8 +58,8 @@ const gameController = (function() {
     let getCurrentPlayer = () => currentPlayer;
 
     const playRound = (x, y) => {
+        if (gameOver) return;
         const success = newBoard.placeMarker(x, y, currentPlayer.marker);
-        let gameOver = false;
         if (success) {
             const result = newBoard.checkWin();
             
@@ -65,28 +69,41 @@ const gameController = (function() {
                     console.log("It's a tie!");
                 } else {
                     console.log(`${currentPlayer.name} won!`);
+                    currentPlayer.increaseScore();
+                    console.log(currentPlayer.getScore());
                 }
-                return; 
+                return result; 
             }
 
             playerSwitch();
             console.log(`It is ${currentPlayer.name}'s turn`);
         }
     }
+
+    const resetGameStatus = () => {
+    newBoard.resetBoard();
+    gameOver = false;
+    currentPlayer = players[0];
+    displayController.updateScreen(); 
+};
+
     return {
         playRound,
-        getCurrentPlayer
+        getCurrentPlayer,
+        resetGameStatus
     }
 })();
-
-let cells = document.querySelectorAll('.cell');
-cells.forEach(cell => {
-    cell.textContent = gameController.getCurrentPlayer.marker;
-});
 
 const displayController = (function() {
     const cells = document.querySelectorAll('.cell');
     const statusDiv = document.getElementById('status-message');
+    const resetBtn = document.querySelector('#reset-btn');
+    const p1Score = document.querySelector('#p1');
+    const p2Score = document.querySelector('#p2');
+
+    p1Score.textContent = `${playerOne.name}'s score: 0`;
+    p2Score.textContent = `${playerTwo.name}'s score: 0`;
+    resetBtn.addEventListener('click', gameController.resetGameStatus);
 
     const updateScreen = (result) => {
         const board = newBoard.getBoard();
@@ -101,8 +118,11 @@ const displayController = (function() {
             statusDiv.textContent = "It's a tie!";
         } else if (result) {
             statusDiv.textContent = `${gameController.getCurrentPlayer().name} Wins!`;
+            p1Score.textContent = `${playerOne.name}'s score: ${playerOne.getScore()}`
+            p2Score.textContent = `${playerTwo.name}'s score: ${playerTwo.getScore()}`
+            console.log("someone won");
         } else {
-            statusDiv.textContent = `${gameController.getCurrentPlayer().name}'s turn (${gameController.getCurrentPlayer().marker})`;
+            statusDiv.textContent = `It is ${gameController.getCurrentPlayer().name}'s turn (${gameController.getCurrentPlayer().marker})`;
         }
     };
 
@@ -117,11 +137,10 @@ const displayController = (function() {
     });
 
     updateScreen();
+
+    return {
+        updateScreen
+    }
 })();
 
-gameController.playRound(0, 0);
-gameController.playRound(1,1);
-gameController.playRound(0,1);
-gameController.playRound(1,0);
-gameController.playRound(0,2);
 console.log(newBoard.getBoard());
