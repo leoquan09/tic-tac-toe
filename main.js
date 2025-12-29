@@ -33,12 +33,11 @@ const newBoard = (function() {
 
 //player factory function
 const player = (name, marker, score) => {
-    const increaseScore = () => score++;
-    const getScore = () => score;
-    return {
-        name, marker, getScore, increaseScore
-    }
-}
+    let currentScore = score;
+    const increaseScore = () => currentScore++;
+    const getScore = () => currentScore;
+    return { name, marker, getScore, increaseScore };
+};
 
 //make the players
 const playerOne = player(prompt("Player one name: "), "X", 0);
@@ -52,8 +51,11 @@ const gameController = (function() {
         currentPlayer = currentPlayer === players[0] ?  players[1] : players[0];
     }
 
+    let getCurrentPlayer = () => currentPlayer;
+
     const playRound = (x, y) => {
         const success = newBoard.placeMarker(x, y, currentPlayer.marker);
+        let gameOver = false;
         if (success) {
             const result = newBoard.checkWin();
             
@@ -72,8 +74,49 @@ const gameController = (function() {
         }
     }
     return {
-        playRound
+        playRound,
+        getCurrentPlayer
     }
+})();
+
+let cells = document.querySelectorAll('.cell');
+cells.forEach(cell => {
+    cell.textContent = gameController.getCurrentPlayer.marker;
+});
+
+const displayController = (function() {
+    const cells = document.querySelectorAll('.cell');
+    const statusDiv = document.getElementById('status-message');
+
+    const updateScreen = (result) => {
+        const board = newBoard.getBoard();
+        
+        cells.forEach(cell => {
+            const r = cell.dataset.row;
+            const c = cell.dataset.col;
+            cell.textContent = board[r][c];
+        });
+
+        if (result === "tie") {
+            statusDiv.textContent = "It's a tie!";
+        } else if (result) {
+            statusDiv.textContent = `${gameController.getCurrentPlayer().name} Wins!`;
+        } else {
+            statusDiv.textContent = `${gameController.getCurrentPlayer().name}'s turn (${gameController.getCurrentPlayer().marker})`;
+        }
+    };
+
+    cells.forEach(cell => {
+        cell.addEventListener('click', (e) => {
+            const row = e.target.dataset.row;
+            const col = e.target.dataset.col;
+
+            const result = gameController.playRound(row, col);
+            updateScreen(result);
+        });
+    });
+
+    updateScreen();
 })();
 
 gameController.playRound(0, 0);
